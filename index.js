@@ -356,32 +356,34 @@ io.on("connection", sendPixelArray);
 io.on("connection", (socket) => {
   socket.on("chat", async (msg) => {
     if (msg) {
-      const msgContent = JSON.parse(msg);
+      console.log('chat is not allowed')
+      
+      // const msgContent = JSON.parse(msg);
 
-      const token = msgContent.token;
-      const textContent = msgContent.textContent;
+      // const token = msgContent.token;
+      // const textContent = msgContent.textContent;
 
-      let username = null;
+      // let username = null;
 
-      try {
-        if (!token) return null;
-        const verified = verifyjwt(token);
+      // try {
+      //   if (!token) return null;
+      //   const verified = verifyjwt(token);
 
-        if (!verified) return null;
+      //   if (!verified) return null;
 
-        user = await usersCollection.findOne({
-          username: encrypt(verified.username),
-        });
-        if (!user) return null;
-        username = verified.username;
-      } catch (err) {
-        console.log("cannot send");
-        // return res.status(405).send(err);
-      }
+      //   user = await usersCollection.findOne({
+      //     username: encrypt(verified.username),
+      //   });
+      //   if (!user) return null;
+      //   username = verified.username;
+      // } catch (err) {
+      //   console.log("cannot send");
+      //   // return res.status(405).send(err);
+      // }
 
-      if (username && textContent.trim().length > 0) {
-        io.emit("chat", JSON.stringify({ sender: username, textContent }));
-      }
+      // if (username && textContent.trim().length > 0) {
+      //   io.emit("chat", JSON.stringify({ sender: username, textContent }));
+      // }
     }
   });
 });
