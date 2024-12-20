@@ -357,7 +357,7 @@ io.on("connection", sendPixelArray);
 io.on("connection", (socket) => {
   socket.on("chat", async (msg) => {
     if (msg) {
-      console.log("chat is now allowed");
+      console.log("chat is not allowed");
 
       // const msgContent = JSON.parse(msg);
 
