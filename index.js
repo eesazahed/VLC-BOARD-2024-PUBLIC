@@ -223,7 +223,7 @@ app.post("/", async (req, res) => {
 });
 
 app.post("/placepixel", async (req, res) => {
-  const isCanvasDay = false;
+  const isCanvasDay = false; // manually set
 
   if (pixelArray && isCanvasDay) {
     let token = req.body.token;
