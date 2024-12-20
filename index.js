@@ -50,8 +50,6 @@ client.connect(async (err) => {
     process.exit(1);
   }
 
-  console.log("Connected to MongoDB");
-
   boardCollection = client.db("board").collection("pixels");
 
   const board = await boardCollection.findOne({ _id: "latestBoard" });
@@ -225,71 +223,61 @@ app.post("/", async (req, res) => {
 });
 
 app.post("/placepixel", async (req, res) => {
-  const isCanvasDay = false; // Manually set
+  const isCanvasDay = false;
 
   if (pixelArray && isCanvasDay) {
     let token = req.body.token;
+
     let selectedX = req.body.selectedX;
     let selectedY = req.body.selectedY;
     let selectedColor = req.body.selectedColor;
+
     if (
       selectedX > pixelArray[0].length ||
       selectedY > pixelArray.length ||
       selectedX < 0 ||
       selectedY < 0
     ) {
+      return res.status(400).send("Please place a pixel on the grid.");
     }
+
     if (!selectedColor) {
       return res.status(400).send("Please select a colour.");
     }
+
     let user = null;
+
     try {
       if (!token) return res.status(405).send("Unauthorized.");
+
       const verified = verifyjwt(token);
       if (!verified) return res.status(405).send("Unauthorized.");
+
       user = await usersCollection.findOne({
         username: encrypt(verified.username),
       });
+
       if (!user) return res.status(405).send("Unauthorized.");
 
       user = { ...user, _id: user._id.toString() };
     } catch (err) {
       return res.status(405).send(err);
     }
+
     let cooldown;
+
     if (user) {
       cooldown = user.cooldown;
     } else {
       return res.status(405).send("Not a registered user!");
     }
-    if (cooldown < Date.now()) {
-      cooldown = Date.now() + 11000;
-      await usersCollection.updateOne(
-        { username: user.username },
-        { $set: { cooldown } }
-      );
 
+    if (cooldown < Date.now()) {
       try {
-        if (cooldown < Date.now()) {
-          pixelArray[selectedY][selectedX] = parseInt(selectedColor, 10);
-          let newlog = `${
-            verified.username
-          } Placed pixel at ${selectedX}, ${selectedY} at ${Date.now()}`;
-          await client2
-            .db("main")
-            .collection("logs")
-            .insertOne({
-              log: newlog,
-            })
-            .catch((err) => {
-              console.log(err);
-            });
-        }
+        pixelArray[selectedY][selectedX] = parseInt(selectedColor, 10);
       } catch (err) {
         return res.sendStatus(403);
       }
-
-      res.send({ cooldown: cooldown });
 
       io.emit("pixelUpdate", {
         x: req.body.selectedX,
@@ -299,7 +287,18 @@ app.post("/placepixel", async (req, res) => {
         u: user._id,
       });
 
+      cooldown = Date.now() + 11000;
+
+      res.send({ cooldown: cooldown });
+
+      await usersCollection.updateOne(
+        { username: user.username },
+        { $set: { cooldown } }
+      );
+
       let _id = `${selectedX}${selectedY}`;
+
+      const pixel = await placedCollection.findOne({ _id });
 
       await placedCollection.updateOne(
         { _id },
@@ -309,8 +308,6 @@ app.post("/placepixel", async (req, res) => {
     } else {
       return res.status(403).send({ cooldown: cooldown });
     }
-  } else {
-    return res.status(400).send("Canvas day is over.");
   }
 });
 
@@ -319,10 +316,14 @@ app.get("/about", (req, res) => {
 });
 
 app.post("/user", async (req, res) => {
-  const user = await usersCollection.findOne({ _id: ObjectId(req.body.id) });
-  if (user) {
-    res.json({ username: user.username });
-  } else {
+  try {
+    const user = await usersCollection.findOne({ _id: ObjectId(req.body.id) });
+    if (user) {
+      res.json({ username: user.username });
+    } else {
+      res.json({});
+    }
+  } catch {
     res.json({});
   }
 });
@@ -356,34 +357,32 @@ io.on("connection", sendPixelArray);
 io.on("connection", (socket) => {
   socket.on("chat", async (msg) => {
     if (msg) {
-      console.log('chat is not allowed')
-      
-      // const msgContent = JSON.parse(msg);
+      const msgContent = JSON.parse(msg);
 
-      // const token = msgContent.token;
-      // const textContent = msgContent.textContent;
+      const token = msgContent.token;
+      const textContent = msgContent.textContent;
 
-      // let username = null;
+      let username = null;
 
-      // try {
-      //   if (!token) return null;
-      //   const verified = verifyjwt(token);
+      try {
+        if (!token) return null;
+        const verified = verifyjwt(token);
 
-      //   if (!verified) return null;
+        if (!verified) return null;
 
-      //   user = await usersCollection.findOne({
-      //     username: encrypt(verified.username),
-      //   });
-      //   if (!user) return null;
-      //   username = verified.username;
-      // } catch (err) {
-      //   console.log("cannot send");
-      //   // return res.status(405).send(err);
-      // }
+        user = await usersCollection.findOne({
+          username: encrypt(verified.username),
+        });
+        if (!user) return null;
+        username = verified.username;
+      } catch (err) {
+        console.log("cannot send");
+        // return res.status(405).send(err);
+      }
 
-      // if (username && textContent.trim().length > 0) {
-      //   io.emit("chat", JSON.stringify({ sender: username, textContent }));
-      // }
+      if (username && textContent.trim().length > 0) {
+        io.emit("chat", JSON.stringify({ sender: username, textContent }));
+      }
     }
   });
 });
