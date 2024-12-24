@@ -41,8 +41,6 @@ let pixelArray, boardCollection;
 const usersCollection = client.db("main").collection("users");
 const placedCollection = client2.db("main").collection("placed");
 
-const allowedUsers = [];
-
 client.connect(async (err) => {
   if (err) {
     console.log(err);
@@ -61,7 +59,7 @@ client.connect(async (err) => {
     await boardCollection.updateOne(
       { _id: "latestBoard" },
       { $set: { _id: "latestBoard", pixelArray } },
-      { upsert: true }
+      { upsert: true },
     );
   }
 });
@@ -134,7 +132,7 @@ app.post("/login", async (req, res) => {
 
       await usersCollection.updateOne(
         { username: checkUser.username },
-        { $set: { cooldown } }
+        { $set: { cooldown } },
       );
     } else {
       cooldown = checkUser.cooldown;
@@ -213,7 +211,7 @@ app.post("/", async (req, res) => {
 
     await usersCollection.updateOne(
       { username: user.username },
-      { $set: { cooldown } }
+      { $set: { cooldown } },
     );
   } else {
     cooldown = user.cooldown;
@@ -223,7 +221,7 @@ app.post("/", async (req, res) => {
 });
 
 app.post("/placepixel", async (req, res) => {
-  const isCanvasDay = false; // manually set
+  const isCanvasDay = false;
 
   if (pixelArray && isCanvasDay) {
     let token = req.body.token;
@@ -293,7 +291,7 @@ app.post("/placepixel", async (req, res) => {
 
       await usersCollection.updateOne(
         { username: user.username },
-        { $set: { cooldown } }
+        { $set: { cooldown } },
       );
 
       let _id = `${selectedX}${selectedY}`;
@@ -303,7 +301,7 @@ app.post("/placepixel", async (req, res) => {
       await placedCollection.updateOne(
         { _id },
         { $push: { p: { c: req.body.selectedColor, u: user._id } } },
-        { upsert: true }
+        { upsert: true },
       );
     } else {
       return res.status(403).send({ cooldown: cooldown });
